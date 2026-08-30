@@ -1,0 +1,7 @@
+# Core app runs on Windows in --dry-run mode with no extra packages.
+# Install these on the Raspberry Pi 4B for live hardware:
+gpiozero>=2.0.1
+luma.oled>=3.13.0
+smbus2>=0.4.3
+adafruit-circuitpython-ads1x15>=2.2.0
+pigpio>=1.78
