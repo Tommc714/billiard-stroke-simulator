@@ -39,6 +39,10 @@ MOTOR_R_EN = 16  # board 36
 MOTOR_L_EN = 26  # board 37
 MOTOR_PWM_HZ = 20000
 MOTOR_MAX_DUTY = 0.6  # raise after you measure stall current at your voltage
+# True if +duty makes encoder counts go down (stroke would never hit +2400).
+MOTOR_INVERT = True
+# Jog is a creep, not a stroke. 6% of 9 V will not turn most motors; 25% is still well under MAX.
+JOG_DUTY = 0.25
 
 # --- User controls (BCM) ---
 FIRE_PIN = 23  # board 16, button to GND

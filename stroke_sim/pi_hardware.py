@@ -8,6 +8,16 @@ from typing import Optional
 import config
 from stroke_sim import Telemetry
 
+def _use_pigpio_factory() -> None:
+    """gpiozero on Debian Trixie defaults to lgpio, which rejects 20 kHz PWM."""
+    from gpiozero import Device
+    from gpiozero.pins.pigpio import PiGPIOFactory
+
+    if type(Device.pin_factory).__name__ == "PiGPIOFactory":
+        return
+    Device.pin_factory = PiGPIOFactory()
+
+
 # Gray-code 4× quadrature. Invalid transitions (bit jumps) are ignored.
 _QUAD = {
     0b0001: 1,
@@ -25,6 +35,7 @@ class PiMotor:
     def __init__(self) -> None:
         from gpiozero import DigitalOutputDevice, PWMOutputDevice
 
+        _use_pigpio_factory()
         self._rpwm = PWMOutputDevice(config.MOTOR_RPWM, frequency=config.MOTOR_PWM_HZ)
         self._lpwm = PWMOutputDevice(config.MOTOR_LPWM, frequency=config.MOTOR_PWM_HZ)
         self._ren = DigitalOutputDevice(config.MOTOR_R_EN)
@@ -36,12 +47,13 @@ class PiMotor:
     def set_duty(self, duty: float) -> None:
         duty = max(-config.MOTOR_MAX_DUTY, min(config.MOTOR_MAX_DUTY, duty))
         self.duty = duty
-        if duty > 0:
+        applied = -duty if config.MOTOR_INVERT else duty
+        if applied > 0:
             self._lpwm.value = 0
-            self._rpwm.value = duty
-        elif duty < 0:
+            self._rpwm.value = applied
+        elif applied < 0:
             self._rpwm.value = 0
-            self._lpwm.value = -duty
+            self._lpwm.value = -applied
         else:
             self._rpwm.value = 0
             self._lpwm.value = 0
@@ -162,6 +174,7 @@ class PiControls:
     def __init__(self) -> None:
         from gpiozero import Button
 
+        _use_pigpio_factory()
         self._fire = Button(config.FIRE_PIN, pull_up=True, bounce_time=0.05)
         self._home = Button(config.HOME_PIN, pull_up=True, bounce_time=0.05)
         self._estop = Button(config.ESTOP_PIN, pull_up=True, bounce_time=0.02)

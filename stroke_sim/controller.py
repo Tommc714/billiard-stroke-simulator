@@ -137,9 +137,11 @@ class StrokeController:
         rising_fire = fire and not self._last_fire
         self._last_fire = fire
 
-        if self.state == State.STALL and (rising_fire or home):
+        if self.state == State.STALL and home:
             self.state = State.IDLE
-            rising_fire = False
+        elif self.state == State.STALL and rising_fire:
+            # Same press both clears stall (e.g. after B+ was cut) and fires.
+            self.state = State.IDLE
 
         if home and not self._last_home and self.state == State.IDLE:
             self.encoder.set_home()
@@ -168,15 +170,16 @@ class StrokeController:
 
         if self.state == State.STROKE:
             self.motor.set_duty(self._ramp_duty(self._duty_cmd, now))
-            hit_at = self._start_pos + deg_to_counts(config.HIT_ANGLE_DEG)
-            if not self._captured and pos >= hit_at:
+            hit_at = deg_to_counts(config.HIT_ANGLE_DEG)
+            traveled = abs(pos - self._start_pos)
+            if not self._captured and traveled >= hit_at:
                 self._hit_rpm = self.encoder.rpm()
                 self._hit_current = current
                 self._hit_encoder = pos
                 self._captured = True
-            traveled = pos - self._start_pos
             if traveled >= config.STROKE_COUNTS:
                 self._finish_stroke(target_name, target, angle)
+                print(f"stroke complete n={self._strokes} counts={traveled}", flush=True)
                 if config.STROKE_MODE == "rocker":
                     self._stroke_t0 = now
                     self.state = State.RETURN

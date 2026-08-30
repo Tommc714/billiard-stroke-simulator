@@ -21,6 +21,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import config
+
 
 def build_hardware(dry_run: bool, mode: str):
     if dry_run:
@@ -109,13 +111,13 @@ def run_oled_watch(dry_run: bool) -> int:
 
 def run_jog(dry_run: bool) -> int:
     motor, encoder, display, controls = build_hardware(dry_run, "jog")
-    print("Jog: pot sets slow duty (15% cap). Ctrl+C to quit.")
+    print(f"Jog: {config.JOG_DUTY*100:.0f}% duty (pot ignored until ADS1115 is on I2C). Ctrl+C to quit.")
     try:
         while _running(controls):
             if controls.estop():
                 motor.stop()
             else:
-                motor.set_duty(controls.power() * 0.15)
+                motor.set_duty(config.JOG_DUTY)
             print(
                 f"\rduty {motor.duty*100:5.1f}%  enc {encoder.position:8d}  rpm {encoder.rpm():6.1f}   ",
                 end="",
